@@ -321,33 +321,42 @@ register_satellite() {
         # Start service
         print_step "7" "Starting Uplink service..."
 
-        systemctl enable void-uplink
-        systemctl start void-uplink
-
-        # Wait for service to start
-        sleep 3
-
-        if systemctl is-active --quiet void-uplink; then
-            print_success "Uplink service started successfully! ✓"
+        if [ "$(uname -s)" = "Darwin" ]; then
+            # macOS - show manual start instructions
+            print_info "macOS detected - Uplink cannot be started automatically"
             echo ""
-            print_info "Service status:"
-            echo -e "   ${BOLD}systemctl status void-uplink${NC}"
+            echo -e "${CYAN}To start Uplink now, run:${NC}"
+            echo -e "  ${GREEN}cd ${INSTALL_DIR}/uplink${NC}"
+            echo -e "  ${GREEN}python3 main.py${NC}"
             echo ""
-            print_info "View logs:"
-            echo -e "   ${BOLD}journalctl -u void-uplink -f${NC}"
-            echo ""
-            print_info "API health check:"
-            echo -e "   ${BOLD}curl ${OVERSEER_URL}/health${NC}"
-            echo ""
-            echo -e "${GREEN}═════════════════════════════════════════════════════════${NC}"
-            echo -e "${GREEN}       Installation Complete! Your Satellite is Ready.        ${NC}"
-            echo -e "${GREEN}═════════════════════════════════════════════════════════${NC}"
+            print_success "Installation complete! ✓"
         else
-            print_error "Uplink service failed to start"
-            echo ""
-            print_info "Check logs for errors:"
-            echo -e "   ${BOLD}journalctl -u void-uplink -n 50${NC}"
-            exit 1
+            # Linux - use systemd
+            systemctl enable void-uplink
+            systemctl start void-uplink
+
+            # Wait for service to start
+            sleep 3
+
+            if systemctl is-active --quiet void-uplink; then
+                print_success "Uplink service started successfully! ✓"
+                echo ""
+                print_info "Service status:"
+                echo -e "   ${BOLD}systemctl status void-uplink${NC}"
+                echo ""
+                print_info "View logs:"
+                echo -e "   ${BOLD}journalctl -u void-uplink -f${NC}"
+                echo ""
+                print_info "API health check:"
+                echo -e "   ${BOLD}curl ${OVERSEER_URL}/health${NC}"
+
+            else
+                print_error "Uplink service failed to start"
+                echo ""
+                print_info "Check logs for errors:"
+                echo -e "   ${BOLD}journalctl -u void-uplink -n 50${NC}"
+                exit 1
+            fi
         fi
     else
         print_error "Failed to register with Overseer"
