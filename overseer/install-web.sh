@@ -26,6 +26,14 @@ GITHUB_REPO="${GITHUB_REPO:-makscee/void}"
 GITHUB_BRANCH="${GITHUB_BRANCH:-master}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/void}"
 
+# Check if script is being piped and save to temp file if needed
+if [ ! -t 0 ]; then
+    SCRIPT_FILE=$(mktemp)
+    cat > "$SCRIPT_FILE"
+    chmod +x "$SCRIPT_FILE"
+    exec bash "$SCRIPT_FILE" "$@"
+fi
+
 print_header() {
     clear
     echo -e "${CYAN}╔═══════════════════════════════════════════════════════════════╗${NC}"
@@ -69,11 +77,7 @@ check_dependencies() {
     if [ "$EUID" -ne 0 ]; then
         print_error "This installer must be run as root"
         echo ""
-        if [ -n "$OVERSEER_URL" ]; then
-            echo "Please run: sudo bash <(curl -fsSL ${OVERSEER_URL}/install-web.sh)"
-        else
-            echo "Please run: sudo OVERSEER_URL=http://<overseer-host>:8000 bash <(curl -fsSL http://<overseer-host>:8000/install-web.sh)"
-        fi
+        echo "Please run: sudo bash <(curl -fsSL <overseer-url>/install-web.sh)"
         exit 1
     fi
     print_success "Running as root ✓"
@@ -175,21 +179,29 @@ collect_configuration() {
     SATELLITE_IP=$(hostname -I | awk '{print $1}')
     SATELLITE_HOSTNAME=$(hostname)
 
-    # Ask for Overseer URL
+    # Auto-detect or ask for Overseer URL
     if [ -z "$OVERSEER_URL" ]; then
-        echo ""
-        echo -e "${BOLD}Overseer Configuration${NC}"
-        echo -e "  ${BLUE}Overseer is the central controller that manages your Satellite${NC}"
-        echo ""
-        read -p "  ${BLUE}Enter Overseer URL${NC} [${YELLOW}http://localhost:8000${NC}]: " OVERSEER_URL
-        echo ""
+        # Default to localhost if running locally, otherwise detect from script source
+        if [ -n "$SCRIPT_URL" ]; then
+            OVERSEER_URL="$SCRIPT_URL"
+        else
+            OVERSEER_URL="http://localhost:8000"
+        fi
     fi
 
-    # Ask for Satellite name
+    # Always ask for Satellite name
+    echo ""
+    echo -e "${BOLD}Satellite Configuration${NC}"
+    echo -e "  ${BLUE}Your Satellite is a machine that runs the Uplink agent${NC}"
+    echo ""
+    read -p "  ${BLUE}Enter Satellite name${NC} [${YELLOW}${SATELLITE_HOSTNAME}${NC}]: " SATELLITE_NAME
+
+    # If user just pressed Enter, use hostname
     if [ -z "$SATELLITE_NAME" ]; then
-        read -p "  ${BLUE}Enter Satellite name${NC} [${YELLOW}${SATELLITE_HOSTNAME}${NC}]: " SATELLITE_NAME
-        echo ""
+        SATELLITE_NAME="$SATELLITE_HOSTNAME"
     fi
+
+    echo ""
 
     print_info "Configuration collected:"
     echo -e "  ${BOLD}Satellite Name:${NC}    ${SATELLITE_NAME}"
