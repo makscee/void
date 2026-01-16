@@ -192,9 +192,10 @@ collect_configuration() {
     # Always ask for Satellite name
     echo ""
     echo -e "${BOLD}Satellite Configuration${NC}"
-    echo -e "  ${BLUE}Your Satellite is a machine that runs the Uplink agent${NC}"
+    echo -e "  ${BLUE}Your Satellite is a machine that runs Uplink agent${NC}"
     echo ""
-    read -p "  ${BLUE}Enter Satellite name${NC} [${YELLOW}${SATELLITE_HOSTNAME}${NC}]: " SATELLITE_NAME
+    echo -en "  ${BLUE}Enter Satellite name${NC} [${YELLOW}${SATELLITE_HOSTNAME}${NC}]: "
+    read SATELLITE_NAME
 
     # If user just pressed Enter, use hostname
     if [ -z "$SATELLITE_NAME" ]; then
