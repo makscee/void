@@ -1,0 +1,16 @@
+[Unit]
+Description=Void Uplink - Satellite Agent for Void Distributed Infrastructure
+After=network.target docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/void/uplink
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=/opt/void/uplink/.env
+ExecStart=/usr/local/bin/uvicorn main:app --host 0.0.0.0 --port 8001
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

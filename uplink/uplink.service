@@ -1,0 +1,20 @@
+[Unit]
+Description=Void Uplink - Satellite Agent
+After=network.target docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/void/uplink
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="UPLINK_HOST=0.0.0.0"
+Environment="UPLINK_PORT=8001"
+Environment="OVERSEER_URL=http://localhost:8000"
+Environment="SATELLITE_NAME=changeme"
+Environment="SATELLITE_IP=127.0.0.1"
+ExecStart=/usr/local/bin/uvicorn main:app --host 0.0.0.0 --port 8001
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

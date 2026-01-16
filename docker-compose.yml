@@ -1,0 +1,51 @@
+# Void Docker Compose
+
+version: '3.8'
+
+services:
+  # Overseer - Central Controller
+  overseer:
+    build: ./overseer
+    container_name: void-overseer
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./overseer/database:/opt/void/overseer
+      - ./overseer/clones:/opt/void/overseer/clones
+    environment:
+      - OVERSEER_HOST=0.0.0.0
+      - OVERSEER_PORT=8000
+      - DB_PATH=/opt/void/overseer/void.db
+      - GIT_CLONE_DIR=/opt/void/overseer/clones
+    networks:
+      - void
+
+  # Uplink Example - Satellite Agent
+  # Note: Run this on each Satellite machine separately, not in docker compose
+  # This is just for development/testing
+  uplink:
+    build: ./uplink
+    container_name: void-uplink
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - UPLINK_HOST=0.0.0.0
+      - UPLINK_PORT=8001
+      - OVERSEER_URL=http://overseer:8000
+      - SATELLITE_NAME=test-satellite
+      - SATELLITE_IP=172.20.0.2
+    networks:
+      - void
+    depends_on:
+      - overseer
+
+networks:
+  void:
+    driver: bridge
+
+volumes:
+  overseer-db:
