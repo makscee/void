@@ -3,6 +3,8 @@
 # Void Uplink Web Installer
 # Usage: curl -fsSL https://raw.githubusercontent.com/makscee/void/master/uplink/install-web.sh | bash
 # Or: bash <(curl -fsSL https://raw.githubusercontent.com/makscee/void/master/uplink/install-web.sh)
+#
+# Version: 1.0.0
 
 set -e
 
