@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Void Uplink Web Installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/makscee/homestack/main/uplink/install.sh | bash
-# Or: bash <(curl -fsSL https://raw.githubusercontent.com/makscee/homestack/main/uplink/install.sh)
+# Usage: curl -fsSL https://raw.githubusercontent.com/makscee/void/master/uplink/install-web.sh | bash
+# Or: bash <(curl -fsSL https://raw.githubusercontent.com/makscee/void/master/uplink/install-web.sh)
 
 set -e
 
@@ -19,8 +19,8 @@ NC='\033[0m'
 # Configuration
 OVERSEER_URL="${OVERSEER_URL:-}"
 SATELLITE_NAME="${SATELLITE_NAME:-}"
-GITHUB_REPO="${GITHUB_REPO:-makscee/homestack}"
-GITHUB_BRANCH="${GITHUB_BRANCH:-main}"
+GITHUB_REPO="${GITHUB_REPO:-makscee/void}"
+GITHUB_BRANCH="${GITHUB_BRANCH:-master}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/void}"
 
 print_header() {
