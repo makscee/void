@@ -247,7 +247,12 @@ install_uplink() {
 
     # Install Python dependencies
     print_info "Installing Python dependencies..."
-    pip3 install -q -r requirements.txt
+    if [ "$(uname -s)" = "Darwin" ]; then
+        # macOS - Homebrew managed pip needs --break-system-packages flag
+        pip3 install --break-system-packages -q -r requirements.txt
+    else
+        pip3 install -q -r requirements.txt
+    fi
 
     # Create environment file
     print_info "Creating environment file..."
@@ -383,7 +388,7 @@ main() {
     echo -en "  ${YELLOW}Proceed with installation? [Y/n]: ${NC}"
     read -n 1 -r
 
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    if [[ -n $REPLY || $REPLY =~ ^[Nn]$ ]]; then
         echo ""
         print_error "Installation cancelled"
         exit 0
