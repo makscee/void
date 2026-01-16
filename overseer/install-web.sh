@@ -262,12 +262,28 @@ SATELLITE_NAME=$SATELLITE_NAME
 SATELLITE_IP=$SATELLITE_IP
 EOF
 
-    # Create systemd service
-    print_info "Installing systemd service..."
-    envsubst < uplink.service.template > /etc/systemd/system/void-uplink.service
+    # OS-specific service installation
+    if [ "$(uname -s)" = "Darwin" ]; then
+        # macOS - no systemd, provide manual run instructions
+        print_info "macOS detected - no systemd service"
+        echo ""
+        echo -e "${CYAN}To start Uplink manually, run:${NC}"
+        echo -e "  ${GREEN}cd ${INSTALL_DIR}/uplink${NC}"
+        echo -e "  ${GREEN}python3 main.py${NC}"
+        echo ""
+        echo -e "${CYAN}Or use screen/tmux to keep it running in background:${NC}"
+        echo -e "  ${YELLOW}screen -S void-uplink${NC}"
+        echo -e "  ${YELLOW}cd ${INSTALL_DIR}/uplink && python3 main.py${NC}"
+        echo -e "  ${YELLOW}# Press Ctrl+A then D to detach${NC}"
+        echo ""
+    else
+        # Linux - install systemd service
+        print_info "Installing systemd service..."
+        envsubst < uplink.service.template > /etc/systemd/system/void-uplink.service
 
-    # Reload systemd
-    systemctl daemon-reload
+        # Reload systemd
+        systemctl daemon-reload
+    fi
 
     print_success "Uplink installed ✓"
     echo ""
