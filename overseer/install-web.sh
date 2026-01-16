@@ -34,6 +34,12 @@ if [ ! -t 0 ]; then
     exec bash "$SCRIPT_FILE" "$@"
 fi
 
+# Auto-detect Overseer URL from script invocation
+if [ -z "$OVERSEER_URL" ]; then
+    # Default to the public Overseer instance
+    OVERSEER_URL="http://85.209.135.21:8000"
+fi
+
 print_header() {
     clear
     echo -e "${CYAN}╔═══════════════════════════════════════════════════════════════╗${NC}"
@@ -176,7 +182,13 @@ collect_configuration() {
     print_step "3" "Collecting configuration..."
 
     # Get system info
-    SATELLITE_IP=$(hostname -I | awk '{print $1}')
+    if [ "$(uname -s)" = "Darwin" ]; then
+        # macOS - get IP differently
+        SATELLITE_IP=$(ipconfig getifaddr en0 | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}')
+    else
+        # Linux
+        SATELLITE_IP=$(hostname -I | awk '{print $1}')
+    fi
     SATELLITE_HOSTNAME=$(hostname)
 
     # Auto-detect or ask for Overseer URL
@@ -368,7 +380,8 @@ main() {
     echo -e "  Overseer URL:     ${OVERSEER_URL}"
     echo ""
 
-    read -p "  ${YELLOW}Proceed with installation? [Y/n]: " -n 1 -r
+    echo -en "  ${YELLOW}Proceed with installation? [Y/n]: ${NC}"
+    read -n 1 -r
 
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo ""
