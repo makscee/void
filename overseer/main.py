@@ -274,6 +274,7 @@ async def root():
             "POST /satellite/register": "Register a new Satellite (Uplink)",
             "GET /satellites": "List all registered Satellites",
             "GET /satellites/{id}": "Get Satellite details",
+            "DELETE /satellites/{id}": "Delete a Satellite",
             "POST /capsules": "Create a new Capsule",
             "GET /capsules": "List all Capsules",
             "GET /capsules/{id}": "Get Capsule details",
@@ -323,6 +324,34 @@ async def register_satellite(satellite: SatelliteRegister):
         "message": f"Satellite '{satellite.name}' registered successfully",
     }
 
+
+    @app.delete("/satellites/{satellite_id}")
+    async def delete_satellite(satellite_id: int):
+        """Delete a Satellite"""
+        conn = get_db()
+        satellite = conn.execute(
+            "SELECT * FROM satellites WHERE id = ?", (satellite_id,)
+        ).fetchone()
+
+        if not satellite:
+            conn.close()
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Satellite {satellite_id} not found",
+            )
+
+        satellite_name = satellite["name"]
+
+        conn.execute("DELETE FROM capsules WHERE satellite_id = ?", (satellite_id,))
+
+        conn.execute("DELETE FROM satellites WHERE id = ?", (satellite_id,))
+        conn.commit()
+        conn.close()
+
+        return {
+            "message": f"Satellite '{satellite_name}' deleted successfully",
+            "satellite_id": satellite_id,
+        }
 
 @app.get("/satellites")
 async def list_satellites():
