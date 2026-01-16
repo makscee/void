@@ -66,7 +66,7 @@ check_dependencies() {
     if [ "$EUID" -ne 0 ]; then
         print_error "This installer must be run as root"
         echo ""
-        echo "Please run: sudo bash <(curl -fsSL https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/main/uplink/install.sh)"
+        echo "Please run: sudo bash <(curl -fsSL https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/uplink/install-web.sh)"
         exit 1
     fi
     print_success "Running as root ✓"
