@@ -10,6 +10,10 @@ echo "🚀 Installing Void Overseer..."
 echo "📁 Creating directories..."
 mkdir -p /opt/void/overseer/clones
 
+# Copy install script for satellites
+echo "📄 Installing satellite install script..."
+cp install-web.sh /opt/void/overseer/
+
 # Install Python dependencies
 echo "📦 Installing Python dependencies..."
 pip3 install -r requirements.txt

@@ -3,7 +3,7 @@ Void Overseer - Central Controller
 Manages Satellites and Capsules across the distributed infrastructure
 """
 
-from fastapi import FastAPI, HTTPException, Depends, status, Header
+from fastapi import FastAPI, HTTPException, Depends, status, Header, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, HttpUrl, validator
@@ -722,6 +722,35 @@ async def health_check():
         "satellites": satellite_count,
         "capsules": capsule_count,
     }
+
+
+# Install script endpoint
+@app.get("/install-web.sh")
+async def get_install_script():
+    """Serve the satellite install script"""
+    script_path = Path(__file__).parent / "install-web.sh"
+    if not script_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Install script not found"
+        )
+
+    with open(script_path, "r") as f:
+        script_content = f.read()
+
+    return Response(
+        content=script_content,
+        media_type="text/x-shellscript",
+        headers={"Content-Disposition": 'inline; filename="install-web.sh"'},
+    )
+
+    with open(script_path, "r") as f:
+        script_content = f.read()
+
+    return JSONResponse(
+        content=script_content,
+        media_type="text/x-shellscript",
+        headers={"Content-Disposition": 'inline; filename="install-web.sh"'},
+    )
 
 
 if __name__ == "__main__":
