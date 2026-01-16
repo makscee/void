@@ -207,10 +207,6 @@ class SatelliteRegister(BaseModel):
     opencode_support: Optional[bool] = False
     git_user: Optional[str] = None
     git_ssh_key: Optional[str] = None
-    rust_support: Optional[bool] = False
-    opencode_support: Optional[bool] = False
-    git_user: Optional[str] = None
-    git_ssh_key: Optional[str] = None
 
 
 class SatelliteResponse(BaseModel):
@@ -324,33 +320,34 @@ async def register_satellite(satellite: SatelliteRegister):
         "message": f"Satellite '{satellite.name}' registered successfully",
     }
 
-    @app.delete("/satellites/{satellite_id}")
-    async def delete_satellite(satellite_id: int):
-        """Delete a Satellite"""
-        conn = get_db()
-        satellite = conn.execute(
-            "SELECT * FROM satellites WHERE id = ?", (satellite_id,)
-        ).fetchone()
 
-        if not satellite:
-            conn.close()
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Satellite {satellite_id} not found",
-            )
+@app.delete("/satellites/{satellite_id}")
+async def delete_satellite(satellite_id: int):
+    """Delete a Satellite"""
+    conn = get_db()
+    satellite = conn.execute(
+        "SELECT * FROM satellites WHERE id = ?", (satellite_id,)
+    ).fetchone()
 
-        satellite_name = satellite["name"]
-
-        conn.execute("DELETE FROM capsules WHERE satellite_id = ?", (satellite_id,))
-
-        conn.execute("DELETE FROM satellites WHERE id = ?", (satellite_id,))
-        conn.commit()
+    if not satellite:
         conn.close()
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Satellite {satellite_id} not found",
+        )
 
-        return {
-            "message": f"Satellite '{satellite_name}' deleted successfully",
-            "satellite_id": satellite_id,
-        }
+    satellite_name = satellite["name"]
+
+    conn.execute("DELETE FROM capsules WHERE satellite_id = ?", (satellite_id,))
+
+    conn.execute("DELETE FROM satellites WHERE id = ?", (satellite_id,))
+    conn.commit()
+    conn.close()
+
+    return {
+        "message": f"Satellite '{satellite_name}' deleted successfully",
+        "satellite_id": satellite_id,
+    }
 
 
 @app.get("/satellites")
@@ -458,92 +455,11 @@ async def create_capsule(capsule: CapsuleCreate):
         )
     finally:
         conn.close()
-        return {
-            "satellite_id": satellite_id,
-            "api_key": api_key,
-            "message": f"Satellite '{satellite.name}' registered successfully",
-        }
 
-    @app.get("/satellites")
-    async def list_satellites():
-        """List all registered Satellites"""
-        conn = get_db()
-        satellites = conn.execute("SELECT * FROM satellites").fetchall()
-        conn.close()
-
-        return {
-            "satellites": [
-                {
-                    "id": s["id"],
-                    "name": s["name"],
-                    "ip_address": s["ip_address"],
-                    "hostname": s["hostname"],
-                    "status": s["status"],
-                    "last_heartbeat": s["last_heartbeat"],
-                    "capabilities": eval(s["capabilities"])
-                    if s["capabilities"]
-                    else [],
-                    "created_at": s["created_at"],
-                }
-                for s in satellites
-            ]
-        }
-
-    @app.get("/satellites/{satellite_id}")
-    async def get_satellite(satellite_id: int):
-        """Get details of a specific Satellite"""
-        conn = get_db()
-        satellite = conn.execute(
-            "SELECT * FROM satellites WHERE id = ?", (satellite_id,)
-        ).fetchone()
-
-        if not satellite:
-            conn.close()
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Satellite {satellite_id} not found",
-            )
-
-        return {
-            "id": satellite["id"],
-            "name": satellite["name"],
-            "ip_address": satellite["ip_address"],
-            "hostname": satellite["hostname"],
-            "status": satellite["status"],
-            "last_heartbeat": satellite["last_heartbeat"],
-            "capabilities": eval(satellite["capabilities"])
-            if satellite["capabilities"]
-            else [],
-            "created_at": satellite["created_at"],
-        }
-
-    @app.delete("/satellites/{satellite_id}")
-    async def delete_satellite(satellite_id: int):
-        """Delete a Satellite"""
-        conn = get_db()
-        satellite = conn.execute(
-            "SELECT * FROM satellites WHERE id = ?", (satellite_id,)
-        ).fetchone()
-
-        if not satellite:
-            conn.close()
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Satellite {satellite_id} not found",
-            )
-
-        satellite_name = satellite["name"]
-
-        conn.execute("DELETE FROM capsules WHERE satellite_id = ?", (satellite_id,))
-
-        conn.execute("DELETE FROM satellites WHERE id = ?", (satellite_id,))
-        conn.commit()
-        conn.close()
-
-        return {
-            "message": f"Satellite '{satellite_name}' deleted successfully",
-            "satellite_id": satellite_id,
-        }
+    return {
+        "capsule_id": capsule_id,
+        "message": f"Capsule '{capsule.name}' created successfully",
+    }
 
 
 @app.get("/capsules")
