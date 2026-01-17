@@ -49,6 +49,75 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+create_config() {
+    CONFIG_FILE="$VOIDNET_DIR/config"
+
+    if [ -f "$CONFIG_FILE" ]; then
+        echo "Configuration file already exists at $CONFIG_FILE"
+        if [ "$NON_INTERACTIVE" = false ]; then
+            read -p "Overwrite existing config? [y/N]: " OVERWRITE
+            if [[ ! "$OVERWRITE" =~ ^[Yy]$ ]]; then
+                echo "Keeping existing configuration"
+                return
+            fi
+        fi
+    fi
+
+    if [ -z "$API_KEY" ]; then
+        if [ "$NON_INTERACTIVE" = true ]; then
+            echo "Error: API key required in non-interactive mode. Use --api-key option."
+            exit 1
+        else
+            echo -n "Enter Overseer API key: "
+            read -s API_KEY
+            echo ""
+        fi
+    fi
+
+    OVERSEER_URL_INPUT=""
+    if [ "$NON_INTERACTIVE" = true ]; then
+        OVERSEER_URL_INPUT="$DEFAULT_OVERSEER_URL"
+    else
+        read -p "Enter Overseer URL [default: $DEFAULT_OVERSEER_URL]: " OVERSEER_URL_INPUT
+        OVERSEER_URL_INPUT="${OVERSEER_URL_INPUT:-$DEFAULT_OVERSEER_URL}"
+    fi
+
+    cat > "$CONFIG_FILE" <<EOF
+# VoidNet Client Configuration
+client_name=$CLIENT_NAME
+api_key=$API_KEY
+overseer_url=$OVERSEER_URL_INPUT
+EOF
+
+    echo "Configuration saved to $CONFIG_FILE"
+}
+
+install_satellite() {
+    echo ""
+    echo -e "${BLUE}Installing VoidNet Satellite...${NC}"
+
+    if [ -z "$CLIENT_NAME" ]; then
+        if [ "$NON_INTERACTIVE" = true ]; then
+            CLIENT_NAME="satellite-$(hostname)"
+        else
+            read -p "Enter satellite name [default: satellite-$(hostname)]: " INPUT_NAME
+            CLIENT_NAME="${INPUT_NAME:-satellite-$(hostname)}"
+        fi
+    fi
+
+    if ! curl -fsSL "$OVERSEER_URL/install-web.sh" -o /tmp/void-satellite-install.sh; then
+        echo "Error: Failed to download satellite installer from $OVERSEER_URL"
+        exit 1
+    fi
+
+    chmod +x /tmp/void-satellite-install.sh
+
+    echo "Running satellite installation..."
+    /tmp/void-satellite-install.sh --name "$CLIENT_NAME"
+
+    rm -f /tmp/void-satellite-install.sh
+}
+
 # Interactive mode - ask what to install
 if [ "$NON_INTERACTIVE" = false ] && [ -z "$MODE" ]; then
     echo -e "${BLUE}VoidNet Unified Installer${NC}"
@@ -64,14 +133,6 @@ if [ "$NON_INTERACTIVE" = false ] && [ -z "$MODE" ]; then
         2) MODE="satellite" ;;
         *) echo "Invalid choice"; exit 1 ;;
     esac
-fi
-
-# Client installation
-if [ "$MODE" = "client" ]; then
-    install_bash_client
-# Satellite installation
-elif [ "$MODE" = "satellite" ]; then
-    install_satellite
 fi
 
 install_bash_client() {
