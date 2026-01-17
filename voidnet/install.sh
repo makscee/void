@@ -119,7 +119,7 @@ install_satellite() {
 }
 
 # Interactive mode - ask what to install
-if [ "$NON_INTERACTIVE" = false ] && [ -z "$MODE" ]; then
+if [ "$NON_INTERACTIVE" = false ] -a [ -z "$MODE" ]; then
     echo -e "${BLUE}VoidNet Unified Installer${NC}"
     echo ""
     echo "What would you like to install?"
