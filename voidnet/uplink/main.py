@@ -12,18 +12,15 @@ import subprocess
 import tempfile
 from pathlib import Path
 from contextlib import asynccontextmanager
-import docker
-from datetime import datetime
+import datetime
+import socket
 
 # Configuration
 UPLINK_HOST = os.getenv("UPLINK_HOST", "0.0.0.0")
 UPLINK_PORT = int(os.getenv("UPLINK_PORT", "8001"))
 OVERSEER_URL = os.getenv("OVERSEER_URL", "http://localhost:8000")
-SATellite_NAME = os.getenv("SATELLITE_NAME", "unknown")
+SATELLITE_NAME = os.getenv("SATELLITE_NAME", "unknown")
 OVERSEER_API_KEY = os.getenv("OVERSEER_API_KEY", "")
-
-# Docker client
-docker_client = docker.from_env()
 
 
 # Lifespan manager
@@ -34,8 +31,6 @@ async def lifespan(app: FastAPI):
     print(f"📡 Connecting to Overseer at {OVERSEER_URL}")
 
     # Get system info
-    import socket
-
     hostname = socket.gethostname()
 
     try:
@@ -113,40 +108,23 @@ def execute_docker_compose(compose_content: str, action: str = "up"):
     try:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             f.write(compose_content)
-            compose_file = f.name
 
         if action == "up":
             result = subprocess.run(
-                ["docker", "compose", "-f", compose_file, "up", "-d", "--build"],
+                ["docker", "compose", "-f", compose_file.name, "up", "-d", "--build"],
                 capture_output=True,
                 text=True,
                 timeout=300,
             )
         elif action == "down":
             result = subprocess.run(
-                ["docker", "compose", "-f", compose_file, "down"],
+                ["docker", "compose", "-f", compose_file.name, "down"],
                 capture_output=True,
                 text=True,
                 timeout=60,
             )
-        elif action == "logs":
-            result = subprocess.run(
-                [
-                    "docker",
-                    "compose",
-                    "-f",
-                    compose_file,
-                    "logs",
-                    "--tail",
-                    "100",
-                    "--timestamps",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
 
-        os.unlink(compose_file)
+        os.unlink(compose_file.name)
 
         return {
             "success": result.returncode == 0,
@@ -154,11 +132,13 @@ def execute_docker_compose(compose_content: str, action: str = "up"):
             "error": result.stderr,
         }
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return {
+            "success": False,
+            "error": str(e),
+        }
 
 
 # Endpoints
-
 
 @app.get("/")
 async def root():
@@ -166,19 +146,16 @@ async def root():
         "name": "Void Uplink",
         "version": "1.0.0",
         "description": "Satellite Agent for Void Distributed Infrastructure",
-        "satellite_name": SATELLITE_NAME,
         "endpoints": {
             "POST /deploy": "Deploy a Capsule (docker compose up)",
             "POST /stop": "Stop a Capsule (docker compose down)",
-            "GET /logs": "Get Capsule logs",
-            "GET /containers": "List running containers",
             "GET /health": "Health check",
         },
     }
 
 
 @app.post("/deploy")
-async def deploy_capsule(request: DeployRequest, _: bool = Depends(verify_api_key)):
+async def deploy_capsule(request: DeployRequest, _: bool = verify_api_key):
     """Deploy a Capsule using docker compose"""
     result = execute_docker_compose(request.compose_file, action="up")
 
@@ -196,97 +173,19 @@ async def deploy_capsule(request: DeployRequest, _: bool = Depends(verify_api_ke
 
 
 @app.post("/stop")
-async def stop_capsule(request: StopRequest, _: bool = Depends(verify_api_key)):
+async def stop_capsule(request: StopRequest, _: bool = verify_api_key):
     """Stop a Capsule using docker compose down"""
-    # Find the compose file for this capsule
-    # In production, we'd store compose file paths
-    # For now, we'll try to find it by container name
-    try:
-        # Get all containers
-        containers = docker_client.containers.list(all=True)
+    result = execute_docker_compose_by_name(request.capsule_id, action="down")
 
-        # Find containers matching capsule_id
-        capsule_containers = [
-            c for c in containers if f"capsule-{request.capsule_id}" in c.name
-        ]
-
-        if not capsule_containers:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No containers found for capsule {request.capsule_id}",
-            )
-
-        # Stop all capsule containers
-        for container in capsule_containers:
-            container.stop()
-
+    if result["success"]:
         return {
             "capsule_id": request.capsule_id,
-            "message": f"Stopped {len(capsule_containers)} containers",
+            "message": f"Stopped {result['output']}",
         }
-    except Exception as e:
+    else:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Stop failed: {str(e)}",
-        )
-
-
-@app.get("/logs")
-async def get_capsule_logs(
-    capsule_id: int, tail: int = 100, _: bool = Depends(verify_api_key)
-):
-    """Get logs from Capsule containers"""
-    try:
-        containers = docker_client.containers.list(all=True)
-        capsule_containers = [
-            c for c in containers if f"capsule-{capsule_id}" in c.name
-        ]
-
-        if not capsule_containers:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No containers found for capsule {capsule_id}",
-            )
-
-        logs = {}
-        for container in capsule_containers:
-            try:
-                logs[container.name] = container.logs(
-                    tail=tail, timestamps=True
-                ).decode("utf-8")
-            except Exception as e:
-                logs[container.name] = f"Error: {str(e)}"
-
-        return {"capsule_id": capsule_id, "logs": logs}
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get logs: {str(e)}",
-        )
-
-
-@app.get("/containers")
-async def list_containers(_: bool = Depends(verify_api_key)):
-    """List all containers on this Satellite"""
-    try:
-        containers = docker_client.containers.list(all=True)
-
-        return {
-            "containers": [
-                {
-                    "id": c.id[:12],
-                    "name": c.name,
-                    "image": c.image.tags[0] if c.image.tags else str(c.image),
-                    "status": c.status,
-                    "ports": c.ports,
-                }
-                for c in containers
-            ]
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list containers: {str(e)}",
+            detail=f"Stop failed: {result['error']}",
         )
 
 
@@ -294,11 +193,17 @@ async def list_containers(_: bool = Depends(verify_api_key)):
 async def health_check():
     """Health check endpoint"""
     try:
-        containers = docker_client.containers.list()
+        # Check if docker is available by running ps
+        result = subprocess.run(["docker", "ps"], capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            container_count = len([line for line in result.stdout.split('\n') if line.strip()])
+        else:
+            container_count = 0
+
         return {
             "status": "healthy",
             "satellite_name": SATELLITE_NAME,
-            "running_containers": len(containers),
+            "running_containers": container_count,
             "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
