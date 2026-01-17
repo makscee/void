@@ -1,8 +1,14 @@
 """Main CLI entry point for VoidNet"""
 
+import sys
+from pathlib import Path
 import typer
 from rich.console import Console
-from .commands import satellite, capsule, system
+
+# Add parent directory to path for direct execution
+sys.path.insert(0, str(Path(__file__).parent))
+
+from voidnet.commands import satellite, capsule, system
 
 app = typer.Typer(
     name="voidnet",
@@ -18,23 +24,20 @@ app.add_typer(system.app, name="system")
 console = Console()
 
 
-@app.callback()
-def main(
-    version: bool = typer.Option(
-        False, "--version", "-v", help="Show version and exit"
-    ),
-):
-    """VoidNet CLI - Manage Void distributed infrastructure"""
-    if version:
-        from . import __version__
+@app.callback(no_args_is_help=True)
+def main():
+    """Main entry point"""
+    try:
+        app()
+    except KeyboardInterrupt:
+        from rich.console import Console
 
-        console.print(f"VoidNet v{__version__}")
-        raise typer.Exit()
+        Console().print("\n[bold yellow]Interrupted by user[/bold]")
 
 
 def cli_main():
     """Main entry point"""
-    app()
+    main()
 
 
 if __name__ == "__main__":

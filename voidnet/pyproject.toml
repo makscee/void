@@ -10,7 +10,7 @@ authors = [
     {name = "Void Contributors", email = "void@example.com"}
 ]
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 requires-python = ">=3.8"
 dependencies = [
     "typer>=0.9.0",

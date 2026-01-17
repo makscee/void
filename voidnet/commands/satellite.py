@@ -6,11 +6,12 @@ import asyncio
 import httpx
 from rich.table import Table
 from rich.console import Console
+from rich.panel import Panel
 
-from ..config import Config
-from ..api import VoidAPI
-from ..service import ServiceManager
-from ..utils.logging import success, error, info, warn, panel
+from voidnet.config import Config
+from voidnet.api import VoidAPI
+from voidnet.service import ServiceManager
+from voidnet.utils.logging import success, error, info, warn, panel
 
 app = typer.Typer()
 console = Console()

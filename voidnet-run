@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# VoidNet Wrapper Script
+# Runs voidnet CLI directly without requiring pip installation
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VOIDNET_DIR="/Users/admin/Documents/GitHub/void/voidnet"
+
+export PYTHONPATH="$VOIDNET_DIR:$PYTHONPATH"
+
+# Run voidnet with all arguments passed to this script
+python3 -c "import sys; sys.path.insert(0, '$VOIDNET_DIR'); from voidnet.cli import main; main()" "$@"
