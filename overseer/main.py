@@ -277,6 +277,9 @@ async def root():
             "POST /capsules/{id}/deploy": "Deploy a Capsule",
             "POST /capsules/{id}/stop": "Stop a Capsule",
             "POST /capsules/{id}/logs": "Get Capsule logs",
+            "GET /install-web.sh": "Download satellite installation script",
+            "GET /install-client.sh": "Download unified client/satellite installation script",
+            "GET /voidnet-bash.sh": "Download bash CLI client script",
         },
     }
 
@@ -769,13 +772,43 @@ async def get_install_script():
         headers={"Content-Disposition": 'inline; filename="install-web.sh"'},
     )
 
+
+@app.get("/install-client.sh")
+async def get_client_install_script():
+    """Serve the unified client installation script"""
+    script_path = Path(__file__).parent.parent / "voidnet" / "install.sh"
+    if not script_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client install script not found",
+        )
+
     with open(script_path, "r") as f:
         script_content = f.read()
 
-    return JSONResponse(
+    return Response(
         content=script_content,
         media_type="text/x-shellscript",
-        headers={"Content-Disposition": 'inline; filename="install-web.sh"'},
+        headers={"Content-Disposition": 'inline; filename="install-client.sh"'},
+    )
+
+
+@app.get("/voidnet-bash.sh")
+async def get_bash_client_script():
+    """Serve the bash client script"""
+    script_path = Path(__file__).parent.parent / "voidnet" / "voidnet-bash.sh"
+    if not script_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Bash client script not found"
+        )
+
+    with open(script_path, "r") as f:
+        script_content = f.read()
+
+    return Response(
+        content=script_content,
+        media_type="text/x-shellscript",
+        headers={"Content-Disposition": 'inline; filename="voidnet-bash.sh"'},
     )
 
 
