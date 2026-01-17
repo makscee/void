@@ -3,8 +3,6 @@
 # Serves from http://mcow:8000/install-client.sh
 # Supports both client and satellite installation
 
-set -e
-
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
