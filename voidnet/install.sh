@@ -133,6 +133,10 @@ if [ "$NON_INTERACTIVE" = false ] && [ -z "$MODE" ]; then
         2) MODE="satellite" ;;
         *) echo "Invalid choice"; exit 1 ;;
     esac
+elif [ -z "$MODE" ]; then
+    echo -e "${RED}Error: MODE not specified${NC}"
+    echo "Use --client or --satellite flag"
+    exit 1
 fi
 
 install_bash_client() {
