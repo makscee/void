@@ -207,6 +207,10 @@ class SatelliteRegister(BaseModel):
     opencode_support: Optional[bool] = False
     git_user: Optional[str] = None
     git_ssh_key: Optional[str] = None
+    rust_support: Optional[bool] = False
+    opencode_support: Optional[bool] = False
+    git_user: Optional[str] = None
+    git_ssh_key: Optional[str] = None
 
 
 class SatelliteResponse(BaseModel):
@@ -321,34 +325,33 @@ async def register_satellite(satellite: SatelliteRegister):
     }
 
 
-@app.delete("/satellites/{satellite_id}")
-async def delete_satellite(satellite_id: int):
-    """Delete a Satellite"""
-    conn = get_db()
-    satellite = conn.execute(
-        "SELECT * FROM satellites WHERE id = ?", (satellite_id,)
-    ).fetchone()
+    @app.delete("/satellites/{satellite_id}")
+    async def delete_satellite(satellite_id: int):
+        """Delete a Satellite"""
+        conn = get_db()
+        satellite = conn.execute(
+            "SELECT * FROM satellites WHERE id = ?", (satellite_id,)
+        ).fetchone()
 
-    if not satellite:
+        if not satellite:
+            conn.close()
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Satellite {satellite_id} not found",
+            )
+
+        satellite_name = satellite["name"]
+
+        conn.execute("DELETE FROM capsules WHERE satellite_id = ?", (satellite_id,))
+
+        conn.execute("DELETE FROM satellites WHERE id = ?", (satellite_id,))
+        conn.commit()
         conn.close()
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Satellite {satellite_id} not found",
-        )
 
-    satellite_name = satellite["name"]
-
-    conn.execute("DELETE FROM capsules WHERE satellite_id = ?", (satellite_id,))
-
-    conn.execute("DELETE FROM satellites WHERE id = ?", (satellite_id,))
-    conn.commit()
-    conn.close()
-
-    return {
-        "message": f"Satellite '{satellite_name}' deleted successfully",
-        "satellite_id": satellite_id,
-    }
-
+        return {
+            "message": f"Satellite '{satellite_name}' deleted successfully",
+            "satellite_id": satellite_id,
+        }
 
 @app.get("/satellites")
 async def list_satellites():
@@ -754,7 +757,7 @@ async def health_check():
 @app.get("/install-web.sh")
 async def get_install_script():
     """Serve the satellite install script"""
-    script_path = Path(__file__).parent.parent / "uplink" / "install-web.sh"
+    script_path = Path(__file__).parent / "install-web.sh"
     if not script_path.exists():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Install script not found"

@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voidnet"
+version = "0.1.0"
+description = "CLI for managing Void distributed infrastructure satellites"
+authors = [
+    {name = "Void Contributors", email = "void@example.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+dependencies = [
+    "typer>=0.9.0",
+    "pyyaml>=6.0",
+    "httpx>=0.25.0",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+voidnet = "voidnet.cli:main"
+
+[tool.setuptools]
+packages = ["voidnet"]
+
+[tool.setuptools.package-data]
+voidnet = ["uplink/*.py", "uplink/requirements.txt"]
+
+[project.urls]
+Homepage = "https://github.com/makscee/void"
+Documentation = "https://github.com/makscee/void#readme"
+Repository = "https://github.com/makscee/void"

@@ -19,26 +19,11 @@ from datetime import datetime
 UPLINK_HOST = os.getenv("UPLINK_HOST", "0.0.0.0")
 UPLINK_PORT = int(os.getenv("UPLINK_PORT", "8001"))
 OVERSEER_URL = os.getenv("OVERSEER_URL", "http://localhost:8000")
-SATELLITE_NAME = os.getenv("SATELLITE_NAME", "unknown")
+SATellite_NAME = os.getenv("SATELLITE_NAME", "unknown")
 OVERSEER_API_KEY = os.getenv("OVERSEER_API_KEY", "")
 
-# Docker client with Docker Desktop compatibility
-try:
-    docker_client = docker.from_env()
-except Exception as e:
-    # Fallback for Docker Desktop on macOS
-    import os
-
-    docker_host = os.environ.get("DOCKER_HOST")
-    if not docker_host and os.path.exists("/var/run/docker.sock"):
-        docker_client = docker.DockerClient(base_url="unix://var/run/docker.sock")
-    else:
-        # Last attempt - try standard connection
-        try:
-            docker_client = docker.from_env()
-        except Exception as e2:
-            print(f"⚠️  Warning: Could not connect to Docker: {e2}")
-            print("⚠️  Docker services will be unavailable")
+# Docker client
+docker_client = docker.from_env()
 
 
 # Lifespan manager
